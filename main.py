@@ -37,14 +37,12 @@ def main():
         data = csv.DictReader(csvfile)    
         for row in data:
             site_file = row["site_file"]
-            year = row["year"]
-            month = row["month"]
-            day = row["day"]
-            hour = row["hour"]
-
-    #Dummy values before implementing an input
-    lat = 90
-    lon = 90
+            lat = float(row["lat"])
+            lon = float(row["lon"])
+            year = int(row["year"])
+            month = int(row["month"])
+            day = int(row["day"])
+            hour = int(row["hour"])
 
 
     timescale = create_timescale(year, month, day, hour)
@@ -59,8 +57,8 @@ def main():
 
     with open("scores_data.csv", "w", encoding="UTF-8", newline="") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["site_file", "year" , "month", "day", "hour", "light_score", "topology_score", "comms_status"])
-        writer.writerows([["Site01_final_adj_5mpp_slp.tif", year, month, day, hour, light_score, topology_score, comms_status]])
+        writer.writerow(["site_file", "lat", "lon", "year" , "month", "day", "hour", "light_score", "topology_score", "comms_status"])
+        writer.writerows([["Site01_final_adj_5mpp_slp.tif", lat, lon, year, month, day, hour, light_score, topology_score, comms_status]])
 
 
     print(
@@ -169,6 +167,7 @@ def find_light_score(maximum_irradiance, sin_elevation, moon_sun_distance_m):
 def get_slope(site_file):
     with rasterio.open(site_file) as dataset:
         mask = dataset.read(1)
+        print(dataset.transform)
         slope = np.sum(np.abs(np.array(mask))) / (dataset.width * dataset.height)
     return slope
 
@@ -177,7 +176,7 @@ def get_slope(site_file):
 def find_topology_score(site_file):
     average_slope = get_slope(site_file)
     return int(np.round(MAXIMUM_AVERAGE_SLOPE-average_slope))
-#We choose to have 15 degrees be the maximum slope for a good topology, and we subtract the actual slope to get the score. Therefore, a slope of 0 degrees has a perfect score, and any slope greater than 15 degrees has a score of 0.
+#We chose to have 15 degrees be the maximum slope for a good topology, and we subtract the actual slope to get the score. Therefore, a slope of 0 degrees has a perfect score, and any slope greater than 15 degrees has a score of 0.
 
 
 
