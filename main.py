@@ -58,7 +58,7 @@ def main():
     with open("scores_data.csv", "w", encoding="UTF-8", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["site_file", "lat", "lon", "year" , "month", "day", "hour", "light_score", "topology_score", "comms_status"])
-        writer.writerows([["Site01_final_adj_5mpp_slp.tif", lat, lon, year, month, day, hour, light_score, topology_score, comms_status]])
+        writer.writerows([[site_file, lat, lon, year, month, day, hour, light_score, topology_score, comms_status]])
 
 
     print(
@@ -175,6 +175,8 @@ def get_slope(site_file):
 #Returns how ideal the topology is for landing on a scale of 1 to 10
 def find_topology_score(site_file):
     average_slope = get_slope(site_file)
+    if average_slope > MAXIMUM_AVERAGE_SLOPE:
+        return 0
     return int(np.round(MAXIMUM_AVERAGE_SLOPE-average_slope))
 #We chose to have 15 degrees be the maximum slope for a good topology, and we subtract the actual slope to get the score. Therefore, a slope of 0 degrees has a perfect score, and any slope greater than 15 degrees has a score of 0.
 
