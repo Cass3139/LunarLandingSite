@@ -57,11 +57,26 @@ public class UIManager : MonoBehaviour
         "-89.5",
         "223");
     
+    string lightScore, topoScore, commsActive;
     LandingSite currentLandingSite;
 
-    string lightScore, topoScore, commsActive;
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    bool ParseDate(TMP_InputField inputField,string s, int lowerBound, int upperBound)
+    {
+        
+        if(int.TryParse(s, out int date))
+            {
+                if(date >= lowerBound && date <= upperBound)
+                {
+                    month = s;
+                    return true;
+                }
+                inputField.text = "OutOfBound";
+                return false;
+            }
+            inputField.text = "INVALID";
+            return false;
+    }
     void Start()
     {
         RunPython();
@@ -76,49 +91,40 @@ public class UIManager : MonoBehaviour
             scoreText.SetActive(!credits.activeSelf);
         });
 
-        yearField.onEndEdit.AddListener((string s) =>
-        {
-            year = s;
-        });
-        monthField.onEndEdit.AddListener((string s) =>
-        {
-            month = s;
-        });
-        dayField.onEndEdit.AddListener((string s) =>
-        {
-            day = s;
-        });
-        hourField.onEndEdit.AddListener((string s) =>
-        {
-            hour = s;
-        });
+        yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2053)) year = s;});
+        monthField.onEndEdit.AddListener((string s) => {if(ParseDate(monthField,s, 1, 12)) month = s;});
+        dayField.onEndEdit.AddListener((string s) => {if(ParseDate(dayField,s, 1, 31)) day = s;});
+        hourField.onEndEdit.AddListener((string s) => {if(ParseDate(hourField,s, 0, 23)) hour = s;});
 
         HaworthButton.onClick.AddListener(()=>
         {
             currentLandingSite = Haworth;
-            WritePython();
-            RunPython();
-            ReadPython();
-            light_score_text.text = lightScore;
-            topo_score_text.text = topoScore;
-            comms_text.text = commsActive;
-            titleText.text = Haworth.site;
-            totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString();
+            CalculateScores();
+            UpdateScores();
 
         });
         ConnectingRidgeButton.onClick.AddListener(()=>
         {
             currentLandingSite = ConnectingRidge;
-            WritePython();
-            RunPython();
-            ReadPython();
-            light_score_text.text = lightScore;
-            topo_score_text.text = topoScore;
-            comms_text.text = commsActive;
-            titleText.text = ConnectingRidge.site;
-            totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString();
-        });
-        
+            CalculateScores();
+            UpdateScores();
+        });   
+    }
+
+
+    void CalculateScores()
+    {
+        WritePython();
+        RunPython();
+        ReadPython();
+    } 
+    void UpdateScores()
+    {
+        light_score_text.text = lightScore;
+        topo_score_text.text = topoScore;
+        comms_text.text = commsActive;
+        titleText.text = currentLandingSite.site;
+        totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString();
     }
 
     private void RunPython()
