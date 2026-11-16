@@ -30,7 +30,9 @@ public class UIManager : MonoBehaviour
 
     string year, month, day, hour;
 
-    
+    static string pythonDirectoryPath = Path.Combine(GetDirPath(), "PythonScripts"); 
+    static string pythonFilePath = Path.Combine(pythonDirectoryPath, "dist","main.exe");
+    static string pathToCSV = Path.Combine(pythonDirectoryPath, "scores_data.csv");    
     struct LandingSite
     {
         public string site,file,lat,lon;
@@ -124,50 +126,84 @@ public class UIManager : MonoBehaviour
         
     }
 
-private void RunPython()
-{
-    string scriptsDir = Path.Combine(GetPath(), "PythonScripts");
-    print(scriptsDir);
-    string venvPython = Path.Combine(scriptsDir, ".venv", "bin", "python");
-    string mainPy = Path.Combine(scriptsDir, "main.py");
-
-    if (!File.Exists(venvPython)) { UnityEngine.Debug.LogError($"Missing venv python: {venvPython}"); return; }
-    if (!File.Exists(mainPy))     { UnityEngine.Debug.LogError($"Missing main.py: {mainPy}"); return; }
-
-    Run(venvPython, new[] { mainPy }, scriptsDir);
-}
-
-private void Run(string file, string[] args, string workingDir)
-{
-    var psi = new ProcessStartInfo
+    private void RunPython()
     {
-        FileName = file,
-        WorkingDirectory = workingDir,
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false,
-        CreateNoWindow = true
-    };
-    foreach (var a in args) psi.ArgumentList.Add(a);   // handles spaces safely
+        print(Application.dataPath);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = pythonFilePath,
+            WorkingDirectory = pythonDirectoryPath,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
-    using var process = new Process { StartInfo = psi };
-    var sb = new StringBuilder();
-    var err = new StringBuilder();
-    process.OutputDataReceived += (_, e) => { if (e.Data != null) sb.AppendLine(e.Data); };
-    process.ErrorDataReceived  += (_, e) => { if (e.Data != null) err.AppendLine(e.Data); };
+        startInfo.ArgumentList.Add(pythonDirectoryPath);
+        startInfo.ArgumentList.Add(pathToCSV);
 
-    process.Start();
-    process.BeginOutputReadLine();
-    process.BeginErrorReadLine();
-    if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
-    if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
+        var process = new Process { StartInfo = startInfo };
+        var logs = new StringBuilder();
+        var errors = new StringBuilder();
 
-    process.WaitForExit();
+        process.OutputDataReceived += (_, e) => { if (e.Data != null) logs.AppendLine(e.Data); };
+        process.ErrorDataReceived  += (_, e) => { if (e.Data != null) errors.AppendLine(e.Data); };
 
-    UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
-    if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
-    if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
-}
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        if (logs.Length > 0)  UnityEngine.Debug.Log(logs.ToString());
+        if (errors.Length > 0) UnityEngine.Debug.LogError(errors.ToString());
+
+        process.WaitForExit();
+
+        UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
+        if (logs.Length > 0)  UnityEngine.Debug.Log(logs.ToString());
+        if (errors.Length > 0) UnityEngine.Debug.LogError(errors.ToString());
+
+        // string scriptsDir = Path.Combine(GetPath(), "PythonScripts");
+        // print(scriptsDir);
+        // string venvPython = Path.Combine(scriptsDir, ".venv", "bin", "python");
+        // string mainPy = Path.Combine(scriptsDir, "main.py");
+
+        // if (!File.Exists(venvPython)) { UnityEngine.Debug.LogError($"Missing venv python: {venvPython}"); return; }
+        // if (!File.Exists(mainPy))     { UnityEngine.Debug.LogError($"Missing main.py: {mainPy}"); return; }
+
+        // Run(venvPython, new[] { mainPy }, scriptsDir);
+    }   
+
+    private void Run(string file, string[] args, string workingDir)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = file,
+            WorkingDirectory = workingDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        foreach (var a in args) psi.ArgumentList.Add(a);   // handles spaces safely
+
+        using var process = new Process { StartInfo = psi };
+        var sb = new StringBuilder();
+        var err = new StringBuilder();
+        process.OutputDataReceived += (_, e) => { if (e.Data != null) sb.AppendLine(e.Data); };
+        process.ErrorDataReceived  += (_, e) => { if (e.Data != null) err.AppendLine(e.Data); };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
+        if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
+
+        process.WaitForExit();
+
+        UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
+        if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
+        if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
+    }
 
     private void WritePython()
     {
@@ -177,7 +213,7 @@ private void Run(string file, string[] args, string workingDir)
         string stringData = 
         $"{currentLandingSite.file},{currentLandingSite.lat},{currentLandingSite.lon},{year},{month},{day},{hour},0,0,False";
         string output = header + stringData;
-        string path = GetPath() + "/PythonScripts/scores_data.csv";
+        string path = GetDirPath() + "/PythonScripts/scores_data.csv";
         File.WriteAllText(path, output);
     }
 
@@ -186,14 +222,14 @@ private void Run(string file, string[] args, string workingDir)
         print("REEEEAD");
         //Launch python script
         List<List<string>> data = CSVParser.Instance.ReadData(
-                GetPath() + "/PythonScripts", "scores_data.csv");
+                GetDirPath() + "/PythonScripts", "scores_data.csv");
         lightScore = data[1][7];
         topoScore = data[1][8];
         commsActive = data[1][9];
         print($"{lightScore},{topoScore},{commsActive}");
     }
 
-    private static string GetPath(){
+    private static string GetDirPath(){
 			#if UNITY_EDITOR
 			return Application.dataPath;
 			#elif UNITY_ANDROID

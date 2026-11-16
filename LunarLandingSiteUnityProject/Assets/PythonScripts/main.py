@@ -9,10 +9,12 @@ from skyfield.api import PlanetaryConstants, load
 import numpy as np
 import rasterio
 import csv
-
 import os
+import sys
 
-DIR_PATH = os.path.dirname(os.path.abspath(__file__))
+DIR_PATH = sys.argv[1]
+PATH_TO_CSV = sys.argv[2]
+
 
 STEF_BOLT_CST = 5.670367E-8       #Stefan-Boltzmann constant, W/(m^2k^4)
 SUN_SURFACE_TEMP = 5800           #K
@@ -34,8 +36,7 @@ earth_data = eph['earth']
 
 
 def main():   
-
-    with open(DIR_PATH + "/scores_data.csv", "r", encoding="UTF-8", newline="") as csvfile:
+    with open(PATH_TO_CSV, "r", encoding="UTF-8", newline="") as csvfile:
         data = csv.DictReader(csvfile)    
         for row in data:
             site_file = row["site_file"]
@@ -57,25 +58,10 @@ def main():
     topology_score = find_topology_score(site_file)
 
 
-    with open(DIR_PATH + "/scores_data.csv", "w", encoding="UTF-8", newline="") as csvfile:
+    with open(PATH_TO_CSV, "w", encoding="UTF-8", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["site_file", "lat", "lon", "year" , "month", "day", "hour", "light_score", "topology_score", "comms_status"])
         writer.writerows([[site_file, lat, lon, year, month, day, hour, light_score, topology_score, comms_status]])
-
-    # with open("scores_data.csv", "w", encoding="UTF-8", newline="") as csvfile:
-    #         writer = csv.writer(csvfile)
-    #         writer.writerow(["site_file", "lat", "lon", "year" , "month", "day", "hour", "light_score", "topology_score", "comms_status"])
-    #         writer.writerows(["site_file", "lat", "lon", "year", "month", "day", "hour", "light_score", "topology_score", "ONLINE!!!"])
-
-    # print(
-    # f"""
-    # SUN :
-    # Elevation: {sun_elevation} | Irradiance: {irradiance} | Max Irradiance: {max_irradiance}
-    # Earth:
-    # Communications status: {comms_status}""")
-
-    # print("Topology score: " , topology_score)
-    # print("Irradiance score: " , light_score)
 
 
 

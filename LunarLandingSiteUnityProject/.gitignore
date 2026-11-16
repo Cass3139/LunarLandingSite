@@ -35,6 +35,14 @@
 .vs/
 .vscode/
 
+#python environnement
+.venv/
+#pyinstaller builds
+/Assets/PythonScripts/build/
+/Assets/PythonScripts/main.spec
+
+
+
 # Gradle cache directory
 .gradle/
 
