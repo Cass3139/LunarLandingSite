@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 517eede9afa3acada8c854ba3215964b
+guid: 1e37cfa592f6e6f449a90759ca039466
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8226522744890005297
-    second: lunarMap 1_0
+      213: -1832813317778095712
+    second: physumLogo_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 400
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 2
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: lunarMap 1_0
+      name: physumLogo_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1920
-        height: 1920
+        width: 480
+        height: 480
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fc8e826462585dd80800000000000000
-      internalID: -8226522744890005297
+      spriteID: 0a14b368ff98096e0800000000000000
+      internalID: -1832813317778095712
       vertices: []
       indices: 
       edges: []

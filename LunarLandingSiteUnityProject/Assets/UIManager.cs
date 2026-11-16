@@ -30,9 +30,9 @@ public class UIManager : MonoBehaviour
 
     string year, month, day, hour;
 
-    static string pythonDirectoryPath = Path.Combine(GetDirPath(), "PythonScripts"); 
+    static string pythonDirectoryPath = Path.Combine(Application.streamingAssetsPath, "PythonScripts"); 
     static string pythonFilePath = Path.Combine(pythonDirectoryPath, "dist","main.exe");
-    static string pathToCSV = Path.Combine(pythonDirectoryPath, "scores_data.csv");    
+    static string pathToCSV =  Path.Combine(pythonDirectoryPath, "scores_data.csv");    
     struct LandingSite
     {
         public string site,file,lat,lon;
@@ -68,11 +68,6 @@ public class UIManager : MonoBehaviour
         credits.SetActive(false);
         tutorialText.SetActive(false);
         scoreText.SetActive(true);
-
-        // using var process = Process.Start("dotnet", "--version");
-        // process.WaitForExit();
-
-        // print($"exit code: {process.ExitCode}");
 
         questionButton.onClick.AddListener(() =>
         {
@@ -213,7 +208,7 @@ public class UIManager : MonoBehaviour
         string stringData = 
         $"{currentLandingSite.file},{currentLandingSite.lat},{currentLandingSite.lon},{year},{month},{day},{hour},0,0,False";
         string output = header + stringData;
-        string path = GetDirPath() + "/PythonScripts/scores_data.csv";
+        string path = pathToCSV;
         File.WriteAllText(path, output);
     }
 
@@ -221,23 +216,11 @@ public class UIManager : MonoBehaviour
     {
         print("REEEEAD");
         //Launch python script
-        List<List<string>> data = CSVParser.Instance.ReadData(
-                GetDirPath() + "/PythonScripts", "scores_data.csv");
+        List<List<string>> data = CSVParser.Instance.ReadData(pythonDirectoryPath, "scores_data.csv");
         lightScore = data[1][7];
         topoScore = data[1][8];
         commsActive = data[1][9];
         print($"{lightScore},{topoScore},{commsActive}");
     }
 
-    private static string GetDirPath(){
-			#if UNITY_EDITOR
-			return Application.dataPath;
-			#elif UNITY_ANDROID
-			return Application.persistentDataPath;
-			#elif UNITY_IPHONE
-			return GetiPhoneDocumentsPath();
-			#else
-			return Application.dataPath;
-			#endif
-		}
 }

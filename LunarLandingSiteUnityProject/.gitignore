@@ -38,8 +38,8 @@
 #python environnement
 .venv/
 #pyinstaller builds
-/Assets/PythonScripts/build/
-/Assets/PythonScripts/main.spec
+/Assets/StreamingAssets/PythonScripts/build/
+
 
 
 
