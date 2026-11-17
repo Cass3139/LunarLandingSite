@@ -12,7 +12,7 @@ import csv
 import os
 import sys
 
-DIR_PATH = sys.argv[1]
+DATA_PATH = sys.argv[1]
 PATH_TO_CSV = sys.argv[2]
 
 
@@ -157,7 +157,7 @@ def find_light_score(maximum_irradiance, sin_elevation, moon_sun_distance_m):
 
 #Returns the average slope at a certain area according to NASA datasets
 def get_slope(site_file):
-    path = os.path.join(DIR_PATH, site_file)
+    path = os.path.join(DATA_PATH, site_file)
     with rasterio.open(path) as dataset:
         mask = dataset.read(1)
         print(dataset.transform)

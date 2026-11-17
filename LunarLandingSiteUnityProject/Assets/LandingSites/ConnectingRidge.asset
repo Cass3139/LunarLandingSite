@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af3e4968c12790e4cacfad996cd69a33, type: 3}
+  m_Name: ConnectingRidge
+  m_EditorClassIdentifier: Assembly-CSharp::LandingSiteData
+  <landingSite>k__BackingField:
+    site: 01 - Connecting Ridge
+    slopeFile: Site01_final_adj_5mpp_slp.tif
+    lat: -89.5
+    lon: 223
+    terrainData: {fileID: 15600000, guid: 43593c2db6016f94cbd3929ac206e3b1, type: 2}

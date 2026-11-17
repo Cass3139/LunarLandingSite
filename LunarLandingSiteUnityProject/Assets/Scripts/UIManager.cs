@@ -10,55 +10,46 @@ using System.Text;
 using System;
 using System.Threading.Tasks;
 
+[Serializable]
+public struct LocationButton
+{
+    public Button button;
+    public LandingSiteData landingSiteData;
+}
 
 public class UIManager : MonoBehaviour
 {
+    [SerializeField] private LocationButton[] locationButtons;
+    [Header("UI")]
     [SerializeField] GameObject credits;
     [SerializeField] Button questionButton; 
+    [SerializeField] CanvasGroup viewBlocking;
+    [SerializeField] Button backArrow;
+
+    [Header("Sidebar Texts")]
     [SerializeField] GameObject scoreText;
     [SerializeField] GameObject tutorialText;
-    [SerializeField]  Button HaworthButton;
-    [SerializeField] Button ConnectingRidgeButton;
-    [SerializeField] TMP_InputField yearField, monthField, dayField, hourField;
+    [SerializeField]  TMP_Text titleText;
 
-    [SerializeField]  TMP_Text light_score_text;
-    [SerializeField]  TMP_Text topo_score_text;
-    [SerializeField]  TMP_Text comms_text;
-    [SerializeField]  TMP_Text titleText, totalScore;
+    
+    [Header("Input Fields")]
+    [SerializeField] TMP_InputField yearField;
+     [SerializeField] TMP_InputField monthField, dayField, hourField;
+
+    [Header("Scores")]
+    [SerializeField]  TMP_Text totalScore;
+    [SerializeField] TMP_Text topo_score_text, comms_text, light_score_text;
     
 
 
-    string year, month, day, hour;
+    string year, month, day, hour = "";
 
     static string pythonDirectoryPath = Path.Combine(Application.streamingAssetsPath, "PythonScripts"); 
     static string pythonFilePath = Path.Combine(pythonDirectoryPath, "dist","main.exe");
-    static string pathToCSV =  Path.Combine(pythonDirectoryPath, "scores_data.csv");    
-    struct LandingSite
-    {
-        public string site,file,lat,lon;
-        public LandingSite(string _site,string _file,string _lat,string _lon)
-        {
-            site = _site;
-            file = _file;
-            lat = _lat;
-            lon = _lon;
-        }
-    }
-
-    LandingSite Haworth = new(
-        "Haworth",
-        "Haworth_final_adj_5mpp_slp.tif",
-        "-86.7",
-        "336");
-
-    LandingSite ConnectingRidge = new(
-        "01 - Connecting Ridge",
-        "Site01_final_adj_5mpp_slp.tif",
-        "-89.5",
-        "223");
+    static string pythonDataPath = Path.Combine(pythonDirectoryPath, "Data");
+    static string pathToCSV =  Path.Combine(pythonDataPath,"scores_data.csv");    
     
     string lightScore, topoScore, commsActive;
-    LandingSite currentLandingSite;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     bool ParseDate(TMP_InputField inputField,string s, int lowerBound, int upperBound)
@@ -83,6 +74,8 @@ public class UIManager : MonoBehaviour
         credits.SetActive(false);
         tutorialText.SetActive(false);
         scoreText.SetActive(true);
+        viewBlocking.gameObject.SetActive(true);
+        backArrow.gameObject.SetActive(false);
 
         questionButton.onClick.AddListener(() =>
         {
@@ -91,24 +84,37 @@ public class UIManager : MonoBehaviour
             scoreText.SetActive(!credits.activeSelf);
         });
 
-        yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2053)) year = s;});
+        yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2052)) year = s;});
         monthField.onEndEdit.AddListener((string s) => {if(ParseDate(monthField,s, 1, 12)) month = s;});
         dayField.onEndEdit.AddListener((string s) => {if(ParseDate(dayField,s, 1, 31)) day = s;});
         hourField.onEndEdit.AddListener((string s) => {if(ParseDate(hourField,s, 0, 23)) hour = s;});
 
-        HaworthButton.onClick.AddListener(()=>
+        foreach(var location in locationButtons)
         {
-            currentLandingSite = Haworth;
-            CalculateScores();
-            UpdateScores();
+            location.button.onClick.AddListener(()=>
+            {
+                if(year == "" || month == "" || day == "" || hour == "") return;
 
+                if(TerrainManager.currentLandingSiteData == location.landingSiteData) {
+                    RemoveBlockingUI();
+                    return;
+                }
+                TerrainManager.Instance.ChangeTerrain(location.landingSiteData);
+                CameraControl.Instance.SetCenterLanding(TerrainManager.currentLandingSiteData.landingSite.terrainData);
+                CalculateScores();
+                UpdateScoresUI();
+
+                RemoveBlockingUI();
+            });
+        } 
+
+        backArrow.onClick.AddListener(() => {
+            viewBlocking.alpha = 1;
+            viewBlocking.interactable = true;
+            backArrow.gameObject.SetActive(false);
+            CameraControl.isCameraLocked = true;
         });
-        ConnectingRidgeButton.onClick.AddListener(()=>
-        {
-            currentLandingSite = ConnectingRidge;
-            CalculateScores();
-            UpdateScores();
-        });   
+
     }
 
 
@@ -118,18 +124,27 @@ public class UIManager : MonoBehaviour
         RunPython();
         ReadPython();
     } 
-    void UpdateScores()
+
+    void RemoveBlockingUI()
+    {
+        viewBlocking.interactable = false;
+        viewBlocking.alpha = 0;
+        backArrow.gameObject.SetActive(true);
+        CameraControl.isCameraLocked = false;
+    }
+
+    void UpdateScoresUI()
     {
         light_score_text.text = lightScore;
         topo_score_text.text = topoScore;
         comms_text.text = commsActive;
-        titleText.text = currentLandingSite.site;
+        titleText.text = TerrainManager.currentLandingSiteData.landingSite.site;
         totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString();
+
     }
 
     private void RunPython()
     {
-        print(Application.dataPath);
         var startInfo = new ProcessStartInfo
         {
             FileName = pythonFilePath,
@@ -140,7 +155,7 @@ public class UIManager : MonoBehaviour
             CreateNoWindow = true
         };
 
-        startInfo.ArgumentList.Add(pythonDirectoryPath);
+        startInfo.ArgumentList.Add(pythonDataPath);
         startInfo.ArgumentList.Add(pathToCSV);
 
         var process = new Process { StartInfo = startInfo };
@@ -162,16 +177,6 @@ public class UIManager : MonoBehaviour
         UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
         if (logs.Length > 0)  UnityEngine.Debug.Log(logs.ToString());
         if (errors.Length > 0) UnityEngine.Debug.LogError(errors.ToString());
-
-        // string scriptsDir = Path.Combine(GetPath(), "PythonScripts");
-        // print(scriptsDir);
-        // string venvPython = Path.Combine(scriptsDir, ".venv", "bin", "python");
-        // string mainPy = Path.Combine(scriptsDir, "main.py");
-
-        // if (!File.Exists(venvPython)) { UnityEngine.Debug.LogError($"Missing venv python: {venvPython}"); return; }
-        // if (!File.Exists(mainPy))     { UnityEngine.Debug.LogError($"Missing main.py: {mainPy}"); return; }
-
-        // Run(venvPython, new[] { mainPy }, scriptsDir);
     }   
 
     private void Run(string file, string[] args, string workingDir)
@@ -208,11 +213,12 @@ public class UIManager : MonoBehaviour
 
     private void WritePython()
     {
-        print("WRIIITE");
         string header = 
         "site_file,lat,lon,year,month,day,hour,light_score,topology_score,comms_status\n";
+
+        LandingSite currentLandingSite = TerrainManager.currentLandingSiteData.landingSite;
         string stringData = 
-        $"{currentLandingSite.file},{currentLandingSite.lat},{currentLandingSite.lon},{year},{month},{day},{hour},0,0,False";
+        $"{currentLandingSite.slopeFile},{currentLandingSite.lat},{currentLandingSite.lon},{year},{month},{day},{hour},0,0,False";
         string output = header + stringData;
         string path = pathToCSV;
         File.WriteAllText(path, output);
@@ -220,13 +226,11 @@ public class UIManager : MonoBehaviour
 
     private void ReadPython()
     {
-        print("REEEEAD");
         //Launch python script
-        List<List<string>> data = CSVParser.Instance.ReadData(pythonDirectoryPath, "scores_data.csv");
+        List<List<string>> data = CSVParser.Instance.ReadData(pythonDataPath, "scores_data.csv");
         lightScore = data[1][7];
         topoScore = data[1][8];
         commsActive = data[1][9];
-        print($"{lightScore},{topoScore},{commsActive}");
     }
 
 }
