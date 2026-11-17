@@ -1,2 +1,2 @@
 site_file,lat,lon,year,month,day,hour,light_score,topology_score,comms_status
-Site01_final_adj_5mpp_slp.tif,-89.5,223.0,2000,2,2,2,1,2,True
+Site01_final_adj_5mpp_slp.tif,-89.5,223.0,2000,4,2,2,1,2,False

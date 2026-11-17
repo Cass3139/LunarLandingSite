@@ -43,6 +43,7 @@ public class UIManager : MonoBehaviour
 
 
     string year, month, day, hour = "";
+    string lastYear, lastMonth, lastday, lastHour ="";
 
     static string pythonDirectoryPath = Path.Combine(Application.streamingAssetsPath, "PythonScripts"); 
     static string pythonFilePath = Path.Combine(pythonDirectoryPath, "dist","main.exe");
@@ -84,10 +85,10 @@ public class UIManager : MonoBehaviour
             scoreText.SetActive(!credits.activeSelf);
         });
 
-        yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2052)) year = s;});
-        monthField.onEndEdit.AddListener((string s) => {if(ParseDate(monthField,s, 1, 12)) month = s;});
-        dayField.onEndEdit.AddListener((string s) => {if(ParseDate(dayField,s, 1, 31)) day = s;});
-        hourField.onEndEdit.AddListener((string s) => {if(ParseDate(hourField,s, 0, 23)) hour = s;});
+        yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2052))  year = s;});
+        monthField.onEndEdit.AddListener((string s) => {if(ParseDate(monthField,s, 1, 12))  month = s;});
+        dayField.onEndEdit.AddListener((string s) => {if(ParseDate(dayField,s, 1, 31))  day = s;});
+        hourField.onEndEdit.AddListener((string s) => {if(ParseDate(hourField,s, 0, 23))  hour = s;});
 
         foreach(var location in locationButtons)
         {
@@ -96,9 +97,14 @@ public class UIManager : MonoBehaviour
                 if(year == "" || month == "" || day == "" || hour == "") return;
 
                 if(TerrainManager.currentLandingSiteData == location.landingSiteData) {
-                    RemoveBlockingUI();
-                    return;
+                    if(hour == lastHour && day == lastday && month == lastMonth && year == lastYear)
+                    {
+                        RemoveBlockingUI();
+                        return;
+                    }
                 }
+
+                lastHour = hour; lastday = day; lastMonth = month; lastYear = year;
                 TerrainManager.Instance.ChangeTerrain(location.landingSiteData);
                 CameraControl.Instance.SetCenterLanding(TerrainManager.currentLandingSiteData.landingSite.terrainData);
                 CalculateScores();
