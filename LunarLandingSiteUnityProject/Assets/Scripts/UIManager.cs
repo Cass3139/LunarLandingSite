@@ -43,6 +43,7 @@ public class UIManager : MonoBehaviour
     [Header("Control Buttons")]
     [SerializeField] Button quitButton;
     [SerializeField] private float quitFadeTime = 2;
+    [SerializeField] private float backgroundFadeOutTime;
     private InputAction escapeAction;
 
     
@@ -165,7 +166,7 @@ public class UIManager : MonoBehaviour
     void RemoveBlockingUI()
     {
         viewBlocking.interactable = false;
-        viewBlocking.alpha = 0;
+        StartCoroutine(FadeOutCanvasGroup(viewBlocking, backgroundFadeOutTime));
         backArrow.gameObject.SetActive(true);
         calculatingText.SetActive(false);
         tutorialSidebar.SetActive(false);
@@ -199,6 +200,16 @@ public class UIManager : MonoBehaviour
         }
         groupe.alpha = 0;
         groupe.interactable = false;
+    }
+
+    IEnumerator FadeOutCanvasGroup(CanvasGroup groupe, float fadeTime)
+    {
+        while (groupe.alpha > 0)
+        {
+            groupe.alpha -= 1/fadeTime*Time.deltaTime;
+            yield return null;
+        }
+        groupe.alpha = 0;
     }
 
     private async Task RunPython()
