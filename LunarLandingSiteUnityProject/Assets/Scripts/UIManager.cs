@@ -7,6 +7,8 @@ using UnityEngine.UI;
 using System.Diagnostics;
 using System;
 using System.Threading.Tasks;
+using UnityEngine.InputSystem;
+using System.Collections;
 
 [Serializable]
 public struct LocationButton
@@ -37,6 +39,12 @@ public class UIManager : MonoBehaviour
     [Header("Scores")]
     [SerializeField]  TMP_Text totalScore;
     [SerializeField] TMP_Text topo_score_text, comms_text, light_score_text;
+
+    [Header("Control Buttons")]
+    [SerializeField] Button quitButton;
+    [SerializeField] private float quitFadeTime = 2;
+    private InputAction escapeAction;
+
     
 
     private static bool IS_CALCULATING = false; 
@@ -69,18 +77,25 @@ public class UIManager : MonoBehaviour
     }
     void Start()
     {
-        RunPython();
-        tutorialSidebar.SetActive(false);
-        scoreSidebar.SetActive(true);
-        viewBlocking.gameObject.SetActive(true);
-        backArrow.gameObject.SetActive(false);
-        calculatingText.SetActive(false);
+        // RunPython();
+        InitialUISetUp();
 
 
         questionButton.onClick.AddListener(() =>
         {
             tutorialSidebar.SetActive(!tutorialSidebar.activeSelf);
             scoreSidebar.SetActive(!tutorialSidebar.activeSelf);
+        });
+
+        escapeAction = InputSystem.actions.FindAction("Escape");
+        escapeAction.performed += _ => {
+            StopCoroutine("QuitButtonFade");
+            StartCoroutine(QuitButtonFade());
+        };
+
+        quitButton.onClick.AddListener(() => {
+            print("Quitting");
+            Application.Quit();
         });
 
         yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2052))  year = s;});
@@ -121,6 +136,20 @@ public class UIManager : MonoBehaviour
     }
 
 
+    private void InitialUISetUp()
+    {
+        // print("Setup");
+        tutorialSidebar.SetActive(false);
+        scoreSidebar.SetActive(true);
+        viewBlocking.gameObject.SetActive(true);
+        backArrow.gameObject.SetActive(false);
+        calculatingText.SetActive(false);
+        CanvasGroup quitGroup = quitButton.GetComponent<CanvasGroup>();
+        quitGroup.alpha = 0;
+        quitGroup.interactable = false;
+    }
+
+
     private async Task CalculateScoreAndEnterPlay()
     {
         IS_CALCULATING = true;
@@ -139,6 +168,8 @@ public class UIManager : MonoBehaviour
         viewBlocking.alpha = 0;
         backArrow.gameObject.SetActive(true);
         calculatingText.SetActive(false);
+        tutorialSidebar.SetActive(false);
+        scoreSidebar.SetActive(true);
         CameraControl.isCameraLocked = false;
 
     }
@@ -151,6 +182,23 @@ public class UIManager : MonoBehaviour
         titleText.text = TerrainManager.currentLandingSiteData.landingSite.site;
         totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString() +"/20";
 
+    }
+
+    IEnumerator QuitButtonFade()
+    {
+        CanvasGroup groupe = quitButton.GetComponent<CanvasGroup>();
+        groupe.alpha = 1;
+        groupe.interactable = true;
+
+        yield return new WaitForSeconds(quitFadeTime*2);
+
+        while (groupe.alpha > 0)
+        {
+            groupe.alpha -= 1/quitFadeTime*Time.deltaTime;
+            yield return null;
+        }
+        groupe.alpha = 0;
+        groupe.interactable = false;
     }
 
     private async Task RunPython()
