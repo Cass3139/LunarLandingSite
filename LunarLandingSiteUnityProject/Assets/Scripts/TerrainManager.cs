@@ -16,6 +16,7 @@ public class TerrainManager : MonoBehaviour
     {
         currentLandingSiteData = landingSiteData;
         mainTerrain.terrainData = landingSiteData.landingSite.terrainData;
+        mainTerrain.GetComponent<TerrainCollider>().terrainData = landingSiteData.landingSite.terrainData;
     }
 }
 

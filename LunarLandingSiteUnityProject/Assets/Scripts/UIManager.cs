@@ -1,12 +1,10 @@
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using CSVToolKit;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Diagnostics;
-using System.Text;
 using System;
 using System.Threading.Tasks;
 
@@ -21,14 +19,14 @@ public class UIManager : MonoBehaviour
 {
     [SerializeField] private LocationButton[] locationButtons;
     [Header("UI")]
-    [SerializeField] GameObject credits;
     [SerializeField] Button questionButton; 
     [SerializeField] CanvasGroup viewBlocking;
     [SerializeField] Button backArrow;
+    [SerializeField] GameObject calculatingText;
 
     [Header("Sidebar Texts")]
-    [SerializeField] GameObject scoreText;
-    [SerializeField] GameObject tutorialText;
+    [SerializeField] GameObject scoreSidebar;
+    [SerializeField] GameObject tutorialSidebar;
     [SerializeField]  TMP_Text titleText;
 
     
@@ -41,7 +39,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] TMP_Text topo_score_text, comms_text, light_score_text;
     
 
-
+    private static bool IS_CALCULATING = false; 
     string year, month, day, hour = "";
     string lastYear, lastMonth, lastday, lastHour ="";
 
@@ -72,17 +70,17 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         RunPython();
-        credits.SetActive(false);
-        tutorialText.SetActive(false);
-        scoreText.SetActive(true);
+        tutorialSidebar.SetActive(false);
+        scoreSidebar.SetActive(true);
         viewBlocking.gameObject.SetActive(true);
         backArrow.gameObject.SetActive(false);
+        calculatingText.SetActive(false);
+
 
         questionButton.onClick.AddListener(() =>
         {
-            credits.SetActive(!credits.activeSelf);
-            tutorialText.SetActive(credits.activeSelf);
-            scoreText.SetActive(!credits.activeSelf);
+            tutorialSidebar.SetActive(!tutorialSidebar.activeSelf);
+            scoreSidebar.SetActive(!tutorialSidebar.activeSelf);
         });
 
         yearField.onEndEdit.AddListener((string s) => {if(ParseDate(yearField,s, 1900, 2052))  year = s;});
@@ -94,7 +92,7 @@ public class UIManager : MonoBehaviour
         {
             location.button.onClick.AddListener(()=>
             {
-                if(year == "" || month == "" || day == "" || hour == "") return;
+                if(IS_CALCULATING || year == "" || month == "" || day == "" || hour == "" ) return;
 
                 if(TerrainManager.currentLandingSiteData == location.landingSiteData) {
                     if(hour == lastHour && day == lastday && month == lastMonth && year == lastYear)
@@ -107,10 +105,9 @@ public class UIManager : MonoBehaviour
                 lastHour = hour; lastday = day; lastMonth = month; lastYear = year;
                 TerrainManager.Instance.ChangeTerrain(location.landingSiteData);
                 CameraControl.Instance.SetCenterLanding(TerrainManager.currentLandingSiteData.landingSite.terrainData);
-                CalculateScores();
-                UpdateScoresUI();
-
-                RemoveBlockingUI();
+                calculatingText.SetActive(true);
+                viewBlocking.interactable = false;
+                CalculateScoreAndEnterPlay();
             });
         } 
 
@@ -124,11 +121,16 @@ public class UIManager : MonoBehaviour
     }
 
 
-    void CalculateScores()
+    private async Task CalculateScoreAndEnterPlay()
     {
-        WritePython();
-        RunPython();
-        ReadPython();
+        IS_CALCULATING = true;
+        await WritePython();
+        await RunPython();
+        await ReadPython();
+        IS_CALCULATING = false;
+
+        UpdateScoresUI();
+        RemoveBlockingUI();
     } 
 
     void RemoveBlockingUI()
@@ -136,20 +138,22 @@ public class UIManager : MonoBehaviour
         viewBlocking.interactable = false;
         viewBlocking.alpha = 0;
         backArrow.gameObject.SetActive(true);
+        calculatingText.SetActive(false);
         CameraControl.isCameraLocked = false;
+
     }
 
     void UpdateScoresUI()
     {
-        light_score_text.text = lightScore;
-        topo_score_text.text = topoScore;
+        light_score_text.text = lightScore +"/10";
+        topo_score_text.text = topoScore +"/10";
         comms_text.text = commsActive;
         titleText.text = TerrainManager.currentLandingSiteData.landingSite.site;
-        totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString();
+        totalScore.text = (int.Parse(topoScore) + int.Parse(lightScore)).ToString() +"/20";
 
     }
 
-    private void RunPython()
+    private async Task RunPython()
     {
         var startInfo = new ProcessStartInfo
         {
@@ -165,59 +169,32 @@ public class UIManager : MonoBehaviour
         startInfo.ArgumentList.Add(pathToCSV);
 
         var process = new Process { StartInfo = startInfo };
-        var logs = new StringBuilder();
-        var errors = new StringBuilder();
 
-        process.OutputDataReceived += (_, e) => { if (e.Data != null) logs.AppendLine(e.Data); };
-        process.ErrorDataReceived  += (_, e) => { if (e.Data != null) errors.AppendLine(e.Data); };
+        process.OutputDataReceived += (sender, args) =>
+        {
+            if (args.Data != null)
+                UnityEngine.Debug.Log(args.Data);
+        };
+
+        process.ErrorDataReceived += (sender, args) =>
+        {
+            if (args.Data != null)
+                UnityEngine.Debug.LogError(args.Data);
+        };
 
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        if (logs.Length > 0)  UnityEngine.Debug.Log(logs.ToString());
-        if (errors.Length > 0) UnityEngine.Debug.LogError(errors.ToString());
+        while (!process.HasExited)
+        {
+            await Task.Yield();
+        }
 
-        process.WaitForExit();
-
-        UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
-        if (logs.Length > 0)  UnityEngine.Debug.Log(logs.ToString());
-        if (errors.Length > 0) UnityEngine.Debug.LogError(errors.ToString());
+        process.Dispose();
     }   
 
-    private void Run(string file, string[] args, string workingDir)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = file,
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);   // handles spaces safely
-
-        using var process = new Process { StartInfo = psi };
-        var sb = new StringBuilder();
-        var err = new StringBuilder();
-        process.OutputDataReceived += (_, e) => { if (e.Data != null) sb.AppendLine(e.Data); };
-        process.ErrorDataReceived  += (_, e) => { if (e.Data != null) err.AppendLine(e.Data); };
-
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
-        if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
-
-        process.WaitForExit();
-
-        UnityEngine.Debug.Log($"Python exit code: {process.ExitCode}");
-        if (sb.Length > 0)  UnityEngine.Debug.Log(sb.ToString());
-        if (err.Length > 0) UnityEngine.Debug.LogError(err.ToString());
-    }
-
-    private void WritePython()
+    private async Task WritePython()
     {
         string header = 
         "site_file,lat,lon,year,month,day,hour,light_score,topology_score,comms_status\n";
@@ -230,7 +207,7 @@ public class UIManager : MonoBehaviour
         File.WriteAllText(path, output);
     }
 
-    private void ReadPython()
+    private async Task ReadPython()
     {
         //Launch python script
         List<List<string>> data = CSVParser.Instance.ReadData(pythonDataPath, "scores_data.csv");
